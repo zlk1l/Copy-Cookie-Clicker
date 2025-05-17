@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cookie Clicker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fef6e4;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      transition: background 0.3s;
+    }
+
+    .screen, .container {
+      max-width: 600px;
+      margin: auto;
+      padding: 40px 20px;
+    }
+
+    #startScreen {
+      display: block;
+    }
+
+    #gameScreen {
+      display: none;
+    }
+
+    .cookie {
+      font-size: 140px;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .cookie:active {
+      transform: scale(0.9);
+    }
+
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      font-size: 18px;
+      background-color: #ffb703;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .shop, .status {
+      background: #fff;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .achievement {
+      margin-top: 15px;
+      padding: 10px;
+      background: #d3f8e2;
+      border-radius: 6px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Start Screen -->
+  <div class="screen" id="startScreen">
+    <h1>🍪 Welcome to Cookie Clicker</h1>
+    <p>Click the cookie. Buy upgrades. Rule the oven.</p>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div class="container" id="gameScreen">
+    <h1>🍪 Cookie Clicker</h1>
+    <h2>Cookies: <span id="cookieCount">0</span></h2>
+    <div class="cookie" onclick="clickCookie()">🍪</div>
+
+    <div class="shop">
+      <h3>🛒 Shop</h3>
+      <button onclick="buyUpgrade('autoClicker')">Auto Clicker (<span id="autoClickerCost">50</span>)</button>
+      <button onclick="buyUpgrade('doubleClick')">Double Click (<span id="doubleClickCost">100</span>)</button>
+      <button onclick="unlockBackground()">🌄 Change Background (500)</button>
+    </div>
+
+    <div class="status">
+      <h3>Status</h3>
+      <p>Auto Clickers: <span id="autoClickers">0</span></p>
+      <p>Double Click: <span id="doubleClickOwned">No</span></p>
+      <button onclick="saveGame()">💾 Save</button>
+      <button onclick="loadGame()">📂 Load</button>
+      <button onclick="resetGame()">🗑 Reset</button>
+    </div>
+
+    <div class="achievement" id="achievementMsg">🏆 Achievement Unlocked!</div>
+  </div>
+
+  <audio id="clickSound" src="https://www.myinstants.com/media/sounds/minecraft-click.mp3"></audio>
+
+  <script>
+    let cookies = 0;
+    let autoClickers = 0;
+    let doubleClick = false;
+    let autoClickerCost = 50;
+    let doubleClickCost = 100;
+    let backgrounds = ["#fef6e4", "#f3c5ff", "#b2f7ef", "#e5f4e3"];
+    let currentBG = 0;
+
+    function startGame() {
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("gameScreen").style.display = "block";
+      updateUI();
+    }
+
+    function clickCookie() {
+      cookies += doubleClick ? 2 : 1;
+      document.getElementById("clickSound").play();
+      updateUI();
+      checkAchievements();
+    }
+
+    function buyUpgrade(type) {
+      if (type === 'autoClicker' && cookies >= autoClickerCost) {
+        cookies -= autoClickerCost;
+        autoClickers++;
+        autoClickerCost = Math.floor(autoClickerCost * 1.5);
+        document.getElementById("autoClickerCost").innerText = autoClickerCost;
+      }
+      if (type === 'doubleClick' && !doubleClick && cookies >= doubleClickCost) {
+        cookies -= doubleClickCost;
+        doubleClick = true;
+        document.getElementById("doubleClickCost").innerText = "✓";
+      }
+      updateUI();
+    }
+
+    function unlockBackground() {
+      if (cookies >= 500) {
+        cookies -= 500;
+        currentBG = (currentBG + 1) % backgrounds.length;
+        document.body.style.background = backgrounds[currentBG];
+        showAchievement("🌄 Background Unlocked!");
+        updateUI();
+      }
+    }
+
+    function updateUI() {
+      document.getElementById("cookieCount").innerText = Math.floor(cookies);
+      document.getElementById("autoClickers").innerText = autoClickers;
+      document.getElementById("doubleClickOwned").innerText = doubleClick ? "Yes" : "No";
+    }
+
+    function autoClick() {
+      cookies += autoClickers * (doubleClick ? 2 : 1);
+      updateUI();
+    }
+
+    setInterval(autoClick, 1000);
+
+    function saveGame() {
+      const gameData = {
+        cookies,
+        autoClickers,
+        doubleClick,
+        autoClickerCost,
+        doubleClickCost,
+        currentBG
+      };
+      localStorage.setItem("cookieSave", JSON.stringify(gameData));
+      alert("Game saved!");
+    }
+
+    function loadGame() {
+      const data = JSON.parse(localStorage.getItem("cookieSave"));
+      if (data) {
+        cookies = data.cookies;
+        autoClickers = data.autoClickers;
+        doubleClick = data.doubleClick;
+        autoClickerCost = data.autoClickerCost;
+        doubleClickCost = data.doubleClickCost;
+        currentBG = data.currentBG || 0;
+        document.body.style.background = backgrounds[currentBG];
+        document.getElementById("autoClickerCost").innerText = autoClickerCost;
+        document.getElementById("doubleClickCost").innerText = doubleClick ? "✓" : doubleClickCost;
+        startGame();
+      } else {
+        alert("No saved game found.");
+      }
+    }
+
+    function resetGame() {
+      if (confirm("Reset your game?")) {
+        cookies = 0;
+        autoClickers = 0;
+        doubleClick = false;
+        autoClickerCost = 50;
+        doubleClickCost = 100;
+        currentBG = 0;
+        localStorage.removeItem("cookieSave");
+        document.body.style.background = backgrounds[0];
+        updateUI();
+      }
+    }
+
+    function showAchievement(msg) {
+      const el = document.getElementById("achievementMsg");
+      el.textContent = msg;
+      el.style.display = "block";
+      setTimeout(() => el.style.display = "none", 3000);
+    }
+
+    function checkAchievements() {
+      if (cookies >= 100 && !localStorage.getItem("achv100")) {
+        showAchievement("💯 Collected 100 cookies!");
+        localStorage.setItem("achv100", true);
+      }
+      if (autoClickers >= 5 && !localStorage.getItem("achvAuto5")) {
+        showAchievement("🤖 5 Auto Clickers!");
+        localStorage.setItem("achvAuto5", true);
+      }
+    }
+  </script>
+</body>
+</html>
